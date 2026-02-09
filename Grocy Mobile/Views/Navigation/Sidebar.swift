@@ -169,6 +169,13 @@ struct Sidebar: View {
                         Label("User management", systemImage: MySymbols.user)
                     }
                 )
+                
+                NavigationLink(
+                    value: NavigationItem.recipeParsing,
+                    label: {
+                        Label("Recipe parsing", systemImage: MySymbols.recipe)
+                    }
+                )
             }
 
             #if os(iOS)

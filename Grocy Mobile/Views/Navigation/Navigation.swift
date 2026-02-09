@@ -38,6 +38,7 @@ enum NavigationItem: Hashable {
     case mdUserEntities
     case settings
     case userManagement
+    case recipeParsing
 }
 
 struct Navigation: View {
@@ -105,6 +106,8 @@ struct Navigation: View {
             MDUserFieldsView()
         case .mdUserEntities:
             MDUserEntitiesView()
+        case .recipeParsing:
+            RecipeParserView()
         }
     }
 }
