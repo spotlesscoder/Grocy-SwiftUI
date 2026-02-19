@@ -93,14 +93,17 @@ struct StockEntryFormView: View {
         Form {
             VStack(alignment: .trailing, spacing: 5.0) {
                 if !productDoesntSpoil {
-                    DatePicker(
-                        selection: $stockEntry.bestBeforeDate,
-                        displayedComponents: .date,
-                        label: {
-                            Label("Due date", systemImage: MySymbols.date)
-                                .foregroundStyle(.primary)
-                        }
-                    )
+                    HStack {
+                        DatePicker(
+                            selection: $stockEntry.bestBeforeDate,
+                            displayedComponents: .date,
+                            label: {
+                                Label("Due date", systemImage: MySymbols.date)
+                                    .foregroundStyle(.primary)
+                            }
+                        )
+                        DueDateScanner(dueDate: $stockEntry.bestBeforeDate)
+                    }
                     Text(getRelativeDateAsText(stockEntry.bestBeforeDate, localizationKey: localizationKey) ?? "")
                         .foregroundStyle(.gray)
                         .italic()

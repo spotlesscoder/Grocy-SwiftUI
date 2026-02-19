@@ -98,6 +98,7 @@ nonisolated struct MySymbols {
     static let app = "app"
     static let devMode = "wrench.and.screwdriver"
     static let show = "eye"
+    static let scanDate = "text.viewfinder"
 
     static let expiringSoon = "hourglass.bottomhalf.fill"
     static let overdue = "exclamationmark.triangle.fill"

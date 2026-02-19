@@ -197,23 +197,26 @@ struct PurchaseProductView: View {
                 AmountSelectionView(productID: $productID, amount: $amount, quantityUnitID: $quantityUnitID)
 
                 Section("Due date") {
-                    DatePicker(
-                        selection: $dueDate,
-                        displayedComponents: .date,
-                        label: {
-                            Label {
-                                Text("Due date")
-                                if !productDoesntSpoil {
-                                    Text(getRelativeDateAsText(dueDate, localizationKey: localizationKey) ?? "")
-                                        .foregroundStyle(.secondary)
-                                        .italic()
+                    HStack {
+                        DatePicker(
+                            selection: $dueDate,
+                            displayedComponents: .date,
+                            label: {
+                                Label {
+                                    Text("Due date")
+                                    if !productDoesntSpoil {
+                                        Text(getRelativeDateAsText(dueDate, localizationKey: localizationKey) ?? "")
+                                            .foregroundStyle(.secondary)
+                                            .italic()
+                                    }
+                                } icon: {
+                                    Image(systemName: MySymbols.date)
                                 }
-                            } icon: {
-                                Image(systemName: MySymbols.date)
                             }
-                        }
-                    )
-                    .foregroundStyle(.primary)
+                        )
+                        .foregroundStyle(.primary)
+                        DueDateScanner(dueDate: $dueDate)
+                    }
                     .disabled(productDoesntSpoil)
 
                     MyToggle(isOn: $productDoesntSpoil, description: "Never overdue", descriptionInfo: nil, icon: MySymbols.doesntSpoil)

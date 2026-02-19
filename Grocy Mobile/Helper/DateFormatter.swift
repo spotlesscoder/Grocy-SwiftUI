@@ -220,3 +220,46 @@ func daysDifference(for date: Date?) -> Int? {
         to: Calendar.current.startOfDay(for: nextTime)
     ).day
 }
+
+extension String {
+    var asDate: Date? {
+        if let date = detectDate() {
+            return date
+        }
+        return parseStructuredDate()
+    }
+
+    private func detectDate() -> Date? {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) else { return nil }
+        let range = NSRange(startIndex..., in: self)
+        let match = detector.firstMatch(in: self, options: [], range: range)
+        return match?.date
+    }
+
+    private func parseStructuredDate() -> Date? {
+        // Only needed for compact formats NSDataDetector won't catch
+        let compactFormats = ["ddMMyyyy", "yyyyMMdd", "MMyyyy", "MMyy"]
+        let input = expandTwoDigitYear()
+
+        for format in compactFormats {
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "en_US_POSIX")
+            df.dateFormat = format
+            if let date = df.date(from: input) { return date }
+        }
+        return nil
+    }
+
+    private func expandTwoDigitYear() -> String {
+        let parts = components(separatedBy: CharacterSet(charactersIn: ".-/"))
+        guard parts.count == 3,
+            let last = parts.last,
+            last.count == 2,
+            let year = Int(last)
+        else { return self }
+
+        let separator = String(self.first(where: { ".-/".contains($0) }) ?? ".")
+        let expanded = parts.dropLast() + [String(2000 + year)]
+        return expanded.joined(separator: separator)
+    }
+}

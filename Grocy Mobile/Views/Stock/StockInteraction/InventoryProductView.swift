@@ -167,7 +167,10 @@ struct InventoryProductView: View {
                 }
 
                 Section("Due date") {
-                    DatePicker("Due date", selection: $productInventory.bestBeforeDate, displayedComponents: .date)
+                    HStack {
+                        DatePicker("Due date", selection: $productInventory.bestBeforeDate, displayedComponents: .date)
+                        DueDateScanner(dueDate: $productInventory.bestBeforeDate)
+                    }
                         .disabled(productNeverOverdue)
 
                     MyToggle(isOn: $productNeverOverdue, description: "Never overdue", icon: MySymbols.doesntSpoil)

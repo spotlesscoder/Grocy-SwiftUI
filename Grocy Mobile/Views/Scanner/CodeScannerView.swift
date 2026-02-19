@@ -5,16 +5,15 @@
 ////  Created by Georg Meißner on 08.11.25.
 ////
 
+import AVFoundation
 import SwiftUI
 import Vision
 import VisionKit
-import AVFoundation
 
 struct CodeResult: Hashable {
     var value: String
-    var type: VNBarcodeSymbology
+    var type: VNBarcodeSymbology? = nil
 }
-
 
 #if os(iOS)
     @MainActor
@@ -23,8 +22,9 @@ struct CodeResult: Hashable {
         var onCodeFound: ((CodeResult) -> Void)?
         var onAuthorizationFailed: (() -> Void)?
         var symbologies: [VNBarcodeSymbology]
+        var recognizeDates: Bool = false
 
-        init(isPaused: Binding<Bool> = .constant(false), onCodeFound: ((CodeResult) -> Void)? = nil, onAuthorizationFailed: (() -> Void)? = nil, symbologies: [VNBarcodeSymbology]? = nil) {
+        init(isPaused: Binding<Bool> = .constant(false), onCodeFound: ((CodeResult) -> Void)? = nil, onAuthorizationFailed: (() -> Void)? = nil, symbologies: [VNBarcodeSymbology]? = nil, recognizeDates: Bool = false) {
             self._isPaused = isPaused
             self.onCodeFound = onCodeFound
             self.onAuthorizationFailed = onAuthorizationFailed
@@ -33,13 +33,19 @@ struct CodeResult: Hashable {
             } else {
                 self.symbologies = getSavedCodeTypes()
             }
+            self.recognizeDates = recognizeDates
         }
 
         func makeUIViewController(context: Context) -> DataScannerViewController {
+            var recognizedDataTypes: Set<DataScannerViewController.RecognizedDataType> = []
+            if self.symbologies.count > 0 {
+                recognizedDataTypes.insert(.barcode(symbologies: self.symbologies))
+            }
+            if self.recognizeDates == true {
+                recognizedDataTypes.insert(.text(textContentType: .dateTimeDuration))
+            }
             let scannerViewController = DataScannerViewController(
-                recognizedDataTypes: [
-                    .barcode(symbologies: self.symbologies)
-                ],
+                recognizedDataTypes: recognizedDataTypes,
                 qualityLevel: .balanced,
                 recognizesMultipleItems: false,
                 isHighFrameRateTrackingEnabled: false,
@@ -75,7 +81,7 @@ struct CodeResult: Hashable {
                 try? uiViewController.startScanning()
             }
         }
-        
+
         static func dismantleUIViewController(_ uiViewController: DataScannerViewController, coordinator: Coordinator) {
             uiViewController.stopScanning()
         }
@@ -92,7 +98,7 @@ struct CodeResult: Hashable {
             init(_ parent: CodeScannerView) {
                 self.parent = parent
             }
-            
+
             func checkCameraAuthorization() async -> Bool {
                 switch AVCaptureDevice.authorizationStatus(for: .video) {
                 case .authorized:
@@ -122,6 +128,11 @@ struct CodeResult: Hashable {
                         if let payload = code.payloadStringValue, let callback = parent.onCodeFound {
                             lastScanTime = currentTime
                             callback(CodeResult(value: payload, type: code.observation.symbology))
+                        }
+                    case .text(let text):
+                        if let callback = parent.onCodeFound {
+                            lastScanTime = currentTime
+                            callback(CodeResult(value: text.transcript))
                         }
                     default:
                         print("Not implemented")
