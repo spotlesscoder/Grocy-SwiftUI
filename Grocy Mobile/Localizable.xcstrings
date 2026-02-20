@@ -6603,6 +6603,9 @@
         }
       }
     },
+    "•" : {
+      "shouldTranslate" : false
+    },
     "🇧🇷 Português Brasileiro (Portuguese Brazil)" : {
       "localizations" : {
         "de" : {
@@ -35468,6 +35471,12 @@
         }
       }
     },
+    "Extract Recipe" : {
+
+    },
+    "Extracting recipe..." : {
+
+    },
     "Factor" : {
       "localizations" : {
         "ca" : {
@@ -49881,6 +49890,9 @@
         }
       }
     },
+    "Paste recipe URL" : {
+
+    },
     "per serving" : {
       "localizations" : {
         "ca" : {
@@ -55553,6 +55565,9 @@
           }
         }
       }
+    },
+    "Recipe parsing" : {
+
     },
     "Recipes" : {
       "localizations" : {

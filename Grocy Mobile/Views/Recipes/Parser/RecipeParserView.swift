@@ -40,7 +40,6 @@ struct RecipeParserView: View {
                 Text(error)
                     .foregroundColor(.red)
                     .font(.caption)
-                    .padding()
             }
         }
     }
