@@ -13,9 +13,25 @@ struct ShoppingListItemWrapped {
     let product: MDProduct?
 }
 
-enum ShoppingListSortOption: Hashable, Sendable {
+enum ShoppingListSortOption: String, Codable, Sendable {
     case byName
     case byAmount
+}
+
+enum ShoppingListGrouping: String, Codable, Sendable {
+    case none, productGroup, defaultStore
+}
+
+enum ShoppingListSortOrderStorage: String, Codable, Sendable {
+    case forward, reverse
+
+    var sortOrder: SortOrder {
+        self == .forward ? .forward : .reverse
+    }
+
+    init(from sortOrder: SortOrder) {
+        self = sortOrder == .forward ? .forward : .reverse
+    }
 }
 
 enum ShoppingListInteraction: Hashable, Identifiable {
@@ -84,16 +100,22 @@ struct ShoppingListView: View {
     @State private var firstAppear: Bool = true
 
     @State private var searchString: String = ""
-    @State private var filteredStatus: ShoppingListStatus = .all
-    private enum ShoppingListGrouping: Identifiable {
-        case none, productGroup, defaultStore
-        var id: Int {
-            hashValue
-        }
+
+    @AppStorage("ShoppingListView.filteredStatus") private var filteredStatus: ShoppingListStatus = .all
+    @AppStorage("ShoppingListView.shoppingListGrouping") private var shoppingListGrouping: ShoppingListGrouping = .productGroup
+    @AppStorage("ShoppingListView.sortOption") private var sortOption: ShoppingListSortOption = .byName
+    @AppStorage("ShoppingListView.sortOrder") private var storageSortOrder: ShoppingListSortOrderStorage = .forward
+
+    private var sortOrder: SortOrder {
+        storageSortOrder.sortOrder
     }
-    @State private var shoppingListGrouping: ShoppingListGrouping = .productGroup
-    @State private var sortOption: ShoppingListSortOption = .byName
-    @State private var sortOrder: SortOrder = .forward
+
+    private var sortOrderBinding: Binding<SortOrder> {
+        Binding(
+            get: { self.sortOrder },
+            set: { self.storageSortOrder = ShoppingListSortOrderStorage(from: $0) }
+        )
+    }
 
     @State private var showFilterSheet: Bool = false
 
@@ -717,7 +739,7 @@ struct ShoppingListView: View {
                 Picker(
                     "Sort order",
                     systemImage: MySymbols.sortOrder,
-                    selection: $sortOrder,
+                    selection: sortOrderBinding,
                     content: {
                         Label("Ascending", systemImage: MySymbols.sortForward)
                             .labelStyle(.titleAndIcon)

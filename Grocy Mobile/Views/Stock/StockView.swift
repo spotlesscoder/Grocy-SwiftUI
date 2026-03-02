@@ -33,11 +33,11 @@ enum StockGrouping: String, Codable, Sendable {
     case none, productGroup, nextDueDate, lastPurchased, minStockAmount, parentProduct, defaultLocation
 }
 
-enum SortCategory: String, Codable, Sendable {
+enum StockSortCategory: String, Codable, Sendable {
     case name, dueDate, amount
 }
 
-enum StorageSortOrder: String, Codable, Sendable {
+enum StockSortOrderStorage: String, Codable, Sendable {
     case forward, reverse
     
     var sortOrder: SortOrder {
@@ -49,7 +49,7 @@ enum StorageSortOrder: String, Codable, Sendable {
     }
 }
 
-enum StorageProductStatus: String, Codable, Sendable {
+enum StockProductStatusStorage: String, Codable, Sendable {
     case all, belowMinStock, expiringSoon, overdue, expired
     
     var productStatus: ProductStatus {
@@ -126,11 +126,11 @@ struct StockView: View {
     @Environment(DeepLinkManager.self) var deepLinkManager
 
     @AppStorage("StockView.stockGrouping") private var stockGrouping: StockGrouping = .none
-    @AppStorage("StockView.sortCategory") private var sortCategory: SortCategory = .name
-    @AppStorage("StockView.sortOrder") private var storageSortOrder: StorageSortOrder = .forward
+    @AppStorage("StockView.sortCategory") private var sortCategory: StockSortCategory = .name
+    @AppStorage("StockView.sortOrder") private var storageSortOrder: StockSortOrderStorage = .forward
     @AppStorage("StockView.filteredLocationID") private var filteredLocationID: Int?
     @AppStorage("StockView.filteredProductGroupID") private var filteredProductGroupID: Int?
-    @AppStorage("StockView.filteredStatus") private var storageFilteredStatus: StorageProductStatus = .all
+    @AppStorage("StockView.filteredStatus") private var storageFilteredStatus: StockProductStatusStorage = .all
 
     private var sortOrder: SortOrder {
         storageSortOrder.sortOrder
@@ -139,7 +139,7 @@ struct StockView: View {
     private var sortOrderBinding: Binding<SortOrder> {
         Binding(
             get: { self.sortOrder },
-            set: { self.storageSortOrder = StorageSortOrder(from: $0) }
+            set: { self.storageSortOrder = StockSortOrderStorage(from: $0) }
         )
     }
 
@@ -150,7 +150,7 @@ struct StockView: View {
     private var filteredStatusBinding: Binding<ProductStatus> {
         Binding(
             get: { self.filteredStatus },
-            set: { self.storageFilteredStatus = StorageProductStatus(from: $0) }
+            set: { self.storageFilteredStatus = StockProductStatusStorage(from: $0) }
         )
     }
 
@@ -443,13 +443,13 @@ struct StockView: View {
             computeFilteredAndGroupedStock()
 
             if let filter = deepLinkManager.pendingStockFilter {
-                storageFilteredStatus = StorageProductStatus(from: filter)
+                storageFilteredStatus = StockProductStatusStorage(from: filter)
                 deepLinkManager.consume()
             }
         }
         .onChange(of: deepLinkManager.pendingStockFilter) { _, newValue in
             if let filter = newValue {
-                storageFilteredStatus = StorageProductStatus(from: filter)
+                storageFilteredStatus = StockProductStatusStorage(from: filter)
                 deepLinkManager.consume()
             }
         }
@@ -698,13 +698,13 @@ struct StockView: View {
                     content: {
                         Label("Name", systemImage: MySymbols.product)
                             .labelStyle(.titleAndIcon)
-                            .tag(SortCategory.name)
+                            .tag(StockSortCategory.name)
                         Label("Due date", systemImage: MySymbols.date)
                             .labelStyle(.titleAndIcon)
-                            .tag(SortCategory.dueDate)
+                            .tag(StockSortCategory.dueDate)
                         Label("Amount", systemImage: MySymbols.amount)
                             .labelStyle(.titleAndIcon)
-                            .tag(SortCategory.amount)
+                            .tag(StockSortCategory.amount)
                     }
                 )
                 #if os(iOS)
