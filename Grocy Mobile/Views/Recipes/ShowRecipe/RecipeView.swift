@@ -15,7 +15,11 @@ struct RecipeView: View {
 
     @Query var mdQuantityUnits: MDQuantityUnits
 
-    var recipe: Recipe
+    var initialRecipe: Recipe
+    @State private var recipe: Recipe
+    
+    @State private var errorMessage: String? = nil
+    @State private var isProcessing: Bool = false
 
     @State private var page = WebPage()
     let blank = URL(string: "about:blank")!
@@ -26,6 +30,11 @@ struct RecipeView: View {
     private let additionalDataToUpdate: [AdditionalEntities] = []
     private func updateData() async {
         await grocyVM.requestData(objects: dataToUpdate, additionalObjects: additionalDataToUpdate)
+    }
+    
+    init(initialRecipe: Recipe) {
+        self.initialRecipe = initialRecipe
+        self.recipe = initialRecipe
     }
 
     var recipes: [RecipePosResolvedElement] {
@@ -91,6 +100,25 @@ struct RecipeView: View {
         }
         return noPrice
     }
+    
+    func updateRecipe() async {
+        isProcessing = true
+        do {
+            try recipe.modelContext?.save()
+            try await grocyVM.putMDObjectWithID(object: .recipes, id: initialRecipe.id, content: recipe)
+            GrocyLogger.info("Recipe \(recipe.name) amount update successful.")
+            await updateData()
+            errorMessage = nil
+        } catch {
+            GrocyLogger.error("Recipe \(recipe.name) amount update failed. \(error)")
+            if let apiError = error as? APIError {
+                errorMessage = apiError.displayMessage
+            } else {
+                errorMessage = error.localizedDescription
+            }
+        }
+        isProcessing = false
+    }
 
     var body: some View {
         //        ScrollView(.vertical) {
@@ -101,8 +129,20 @@ struct RecipeView: View {
         //                }
 
         List {
+            if let errorMessage = errorMessage {
+                ErrorMessageView(errorMessage: errorMessage)
+            }
             Section {
-                //                MyDoubleStepper(amount: $recipe.desiredServings, description: "Desired servings", systemImage: MySymbols.amount)
+                MyDoubleStepper(amount: $recipe.desiredServings, description: "Desired servings", systemImage: MySymbols.amount)
+                    .onChange(of: recipe.desiredServings, {
+                        Task {
+                            await updateRecipe()
+                        }
+                    })
+                if isProcessing {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                }
                 LabeledContent(
                     content: {
                         Text("\(summedCalories.formattedAmount) kcal")
@@ -128,14 +168,19 @@ struct RecipeView: View {
                             Text(grocyVM.getFormattedCurrency(amount: summedPrice))
                         },
                         label: {
-                            Label(title: {
-                                HStack {
-                                    Text("Costs")
-                                    FieldDescription(description: "Based on the prices of the default consume rule (Opened first, then first due first, then first in first out) for in stock ingredients and on the last price for missing ones")
+                            Label(
+                                title: {
+                                    HStack {
+                                        Text("Costs")
+                                        FieldDescription(
+                                            description: "Based on the prices of the default consume rule (Opened first, then first due first, then first in first out) for in stock ingredients and on the last price for missing ones"
+                                        )
+                                    }
+                                },
+                                icon: {
+                                    Image(systemName: MySymbols.price)
                                 }
-                            }, icon: {
-                                Image(systemName: MySymbols.price)
-                            })
+                            )
                         }
                     )
                     .foregroundStyle(.primary)
@@ -181,6 +226,6 @@ struct RecipeView: View {
 
 #Preview {
     NavigationStack {
-        RecipeView(recipe: Recipe(name: "Recipe 1", recipeDescription: "<h1>Hello</h1>"))
+        RecipeView(initialRecipe: Recipe(name: "Recipe 1", recipeDescription: "<h1>Hello</h1>"))
     }
 }

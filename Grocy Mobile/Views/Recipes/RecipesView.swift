@@ -184,7 +184,7 @@ struct RecipesView: View {
             .navigationDestination(for: RecipeInteraction.self) { interaction in
                 switch interaction {
                 case .showRecipe(let recipe):
-                    RecipeView(recipe: recipe)
+                    RecipeView(initialRecipe: recipe)
                         .environment(recipeInteractionRouter)
                 case .editRecipe(let recipe):
                     RecipeFormView(existingRecipe: recipe)
