@@ -167,7 +167,7 @@ struct ConsumeProductView: View {
         productID = actionPending ? productToConsumeID : nil
         amount = (actionPending ? barcode?.amount : nil) ?? userSettings?.stockDefaultConsumeAmount ?? 1.0
         quantityUnitID = actionPending ? product?.quIDStock : nil
-        locationID = actionPending ? product?.locationID ?? -1 : -1
+        locationID = actionPending ? product?.defaultConsumeLocationID ?? -1 : -1
         spoiled = false
         useSpecificStockEntry = actionPending ? directStockEntryID != nil : false
         stockEntryID = actionPending ? directStockEntryID ?? nil : nil
@@ -267,7 +267,7 @@ struct ConsumeProductView: View {
                             await grocyVM.requestStockInfo(stockModeGet: .entries, productID: productID, queries: ["include_sub_products=true"])
                         }
                         if let product = product {
-                            locationID = product.locationID
+                            locationID = product.defaultConsumeLocationID ?? product.locationID
                             quantityUnitID = product.quIDStock
                             amount = userSettings?.stockDefaultConsumeAmountUseQuickConsumeAmount ?? false ? (product.quickConsumeAmount ?? 1.0) : Double(userSettings?.stockDefaultConsumeAmount ?? 1)
                         }
@@ -289,8 +289,8 @@ struct ConsumeProductView: View {
                         Text("")
                             .tag(-1 as Int)
                         ForEach(filteredLocations, id: \.id) { location in
-                            if location.id == product?.locationID {
-                                Text("\(location.name) (\(getAmountForLocation(lID: location.id).formattedAmount)) (\(Text("Default location")))")
+                            if location.id == product?.defaultConsumeLocationID {
+                                Text("\(location.name) (\(getAmountForLocation(lID: location.id).formattedAmount)) (\(Text("Default consume location")))")
                                     .tag(location.id as Int)
                             } else {
                                 Text("\(location.name) (\(getAmountForLocation(lID: location.id).formattedAmount))")
