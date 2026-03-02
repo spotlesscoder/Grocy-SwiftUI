@@ -93,6 +93,9 @@
     "%@ %%" : {
       "shouldTranslate" : false
     },
+    "%@ kcal" : {
+      "shouldTranslate" : false
+    },
     "%@ opened" : {
       "localizations" : {
         "ca" : {
@@ -45177,6 +45180,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未找到匹配的记录"
+          }
+        }
+      }
+    },
+    "No price information is available for at least one ingredient" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U nejméně jedné ingredience chybí informace o ceně"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für mindestens eine Zutat sind keine Preisinformationen verfügbar"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No price information is available for at least one ingredient"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hintatieto puuttuu ainakin yhdeltä ainesosalta"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "אין פרטי מחירים זמינים לאחד הרכיבים לפחות"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non sono disponibili informazioni sul prezzo per almeno un ingrediente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1点以上の材料の価格情報がありません"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nėra informacijos apie bent vienos sudedamosios dalies kainą"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não há informações de preço disponíveis para pelo menos um ingrediente"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informacija o ceni manjka pri vsaj eni sestavini"
           }
         }
       }

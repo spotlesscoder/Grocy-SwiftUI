@@ -8,30 +8,43 @@
 import SwiftUI
 
 struct RecipeIngredientRowView: View {
+    @Environment(GrocyViewModel.self) private var grocyVM
+    
     var recipePos: RecipePosResolvedElement
     var quantityUnit: MDQuantityUnit?
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("\(recipePos.recipeAmount.formattedAmount) \(quantityUnit?.getName(amount: recipePos.recipeAmount) ?? "") \(recipePos.productName)")
-                .font(.title2)
-            if recipePos.missingAmount == 0.0 {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("\(Text("Enough in stock")) (\(recipePos.stockAmount.formattedAmount) \(quantityUnit?.getName(amount: recipePos.stockAmount) ?? ""))")
-                        .font(.caption)
-                }
-            } else {
-                HStack {
-                    if recipePos.amountOnShoppingList > 0.0 {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(.yellow)
-                    } else {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.red)
+        HStack {
+            VStack(alignment: .leading) {
+                Text("\(recipePos.recipeAmount.formattedAmount) \(quantityUnit?.getName(amount: recipePos.recipeAmount) ?? "") \(recipePos.productName)")
+                    .font(.title2)
+                if recipePos.missingAmount == 0.0 {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("\(Text("Enough in stock")) (\(recipePos.stockAmount.formattedAmount) \(quantityUnit?.getName(amount: recipePos.stockAmount) ?? ""))")
+                            .font(.caption)
                     }
-                    Text("Not enough in stock, \(recipePos.missingAmount.formattedAmount) missing, \(recipePos.amountOnShoppingList.formattedAmount) already on shopping list")
+                } else {
+                    HStack {
+                        if recipePos.amountOnShoppingList > 0.0 {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundStyle(.yellow)
+                        } else {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.red)
+                        }
+                        Text("Not enough in stock, \(recipePos.missingAmount.formattedAmount) missing, \(recipePos.amountOnShoppingList.formattedAmount) already on shopping list")
+                            .font(.caption)
+                    }
+                }
+            }
+            Spacer()
+            VStack(alignment: .trailing) {
+                Text("\(recipePos.calories.formattedAmount) kcal")
+                    .font(.caption)
+                if recipePos.costs >= 0.01 {
+                    Text(grocyVM.getFormattedCurrency(amount: recipePos.costs))
                         .font(.caption)
                 }
             }

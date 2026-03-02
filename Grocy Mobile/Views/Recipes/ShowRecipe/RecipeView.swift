@@ -28,7 +28,7 @@ struct RecipeView: View {
         await grocyVM.requestData(objects: dataToUpdate, additionalObjects: additionalDataToUpdate)
     }
 
-    var groupedRecipes: [String: [RecipePosResolvedElement]] {
+    var recipes: [RecipePosResolvedElement] {
         let sortDescriptor = SortDescriptor<RecipePosResolvedElement>(\.ingredientGroup)
         let predicate = #Predicate<RecipePosResolvedElement> { recipePos in
             recipePos.recipeID == recipe.id
@@ -39,10 +39,12 @@ struct RecipeView: View {
             sortBy: [sortDescriptor]
         )
 
-        let matchingRecipes = (try? modelContext.fetch(descriptor)) ?? []
+        return (try? modelContext.fetch(descriptor)) ?? []
+    }
 
+    var groupedRecipes: [String: [RecipePosResolvedElement]] {
         var groupedRecipes: [String: [RecipePosResolvedElement]] = [:]
-        for recipePos in matchingRecipes {
+        for recipePos in recipes {
             let ingredientGroup = recipePos.ingredientGroup ?? ""
             if groupedRecipes[ingredientGroup] == nil {
                 groupedRecipes[ingredientGroup] = []
@@ -61,6 +63,35 @@ struct RecipeView: View {
         return (try? modelContext.fetchCount(descriptor)) ?? 0
     }
 
+    var summedCalories: Double {
+        var sumOfCalories: Double = 0
+
+        for recipe in recipes {
+            sumOfCalories += recipe.calories
+        }
+
+        return sumOfCalories
+    }
+
+    var summedPrice: Double {
+        var sumOfPrice: Double = 0
+
+        for recipe in recipes {
+            sumOfPrice += recipe.costs
+        }
+
+        return sumOfPrice
+    }
+    var noPriceForOne: Bool {
+        var noPrice: Bool = false
+        for recipe in recipes {
+            if recipe.costs.isZero {
+                noPrice = true
+            }
+        }
+        return noPrice
+    }
+
     var body: some View {
         //        ScrollView(.vertical) {
         //            VStack(alignment: .leading) {
@@ -74,30 +105,46 @@ struct RecipeView: View {
                 //                MyDoubleStepper(amount: $recipe.desiredServings, description: "Desired servings", systemImage: MySymbols.amount)
                 LabeledContent(
                     content: {
-                        Text("")
-                        //                    Text("\(recipe.)")
+                        Text("\(summedCalories.formattedAmount) kcal")
                     },
                     label: {
-                        HStack {
-                            Label("kcal", systemImage: MySymbols.energy)
-                            FieldDescription(description: "per serving")
-                        }
+                        Label(
+                            title: {
+                                HStack {
+                                    Text("Energy")
+                                    FieldDescription(description: "per serving")
+                                }
+                            },
+                            icon: {
+                                Image(systemName: MySymbols.energy)
+                            }
+                        )
                     }
                 )
                 .foregroundStyle(.primary)
-                LabeledContent(
-                    content: {
-                        Text("")
-                        //                    Text("\(recipe.)")
-                    },
-                    label: {
-                        HStack {
-                            Label("Costs", systemImage: MySymbols.price)
-                            FieldDescription(description: "Based on the prices of the default consume rule (Opened first, then first due first, then first in first out) for in stock ingredients and on the last price for missing ones")
+                VStack(alignment: .leading, spacing: 5.0) {
+                    LabeledContent(
+                        content: {
+                            Text(grocyVM.getFormattedCurrency(amount: summedPrice))
+                        },
+                        label: {
+                            Label(title: {
+                                HStack {
+                                    Text("Costs")
+                                    FieldDescription(description: "Based on the prices of the default consume rule (Opened first, then first due first, then first in first out) for in stock ingredients and on the last price for missing ones")
+                                }
+                            }, icon: {
+                                Image(systemName: MySymbols.price)
+                            })
                         }
+                    )
+                    .foregroundStyle(.primary)
+                    if noPriceForOne {
+                        Text("No price information is available for at least one ingredient")
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
-                )
-                .foregroundStyle(.primary)
+                }
             }
             Section("Ingredients") {
                 ForEach(groupedRecipes.sorted(by: { $0.key < $1.key }), id: \.key) { (groupName, recipes) in
