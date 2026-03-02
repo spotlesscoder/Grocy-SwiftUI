@@ -29,6 +29,60 @@ enum StockInteraction: Hashable, Identifiable {
     var id: Self { self }
 }
 
+enum StockGrouping: String, Codable, Sendable {
+    case none, productGroup, nextDueDate, lastPurchased, minStockAmount, parentProduct, defaultLocation
+}
+
+enum SortCategory: String, Codable, Sendable {
+    case name, dueDate, amount
+}
+
+enum StorageSortOrder: String, Codable, Sendable {
+    case forward, reverse
+    
+    var sortOrder: SortOrder {
+        self == .forward ? .forward : .reverse
+    }
+    
+    init(from sortOrder: SortOrder) {
+        self = sortOrder == .forward ? .forward : .reverse
+    }
+}
+
+enum StorageProductStatus: String, Codable, Sendable {
+    case all, belowMinStock, expiringSoon, overdue, expired
+    
+    var productStatus: ProductStatus {
+        switch self {
+        case .all:
+            return .all
+        case .belowMinStock:
+            return .belowMinStock
+        case .expiringSoon:
+            return .expiringSoon
+        case .overdue:
+            return .overdue
+        case .expired:
+            return .expired
+        }
+    }
+    
+    init(from productStatus: ProductStatus) {
+        switch productStatus {
+        case .all:
+            self = .all
+        case .belowMinStock:
+            self = .belowMinStock
+        case .expiringSoon:
+            self = .expiringSoon
+        case .overdue:
+            self = .overdue
+        case .expired:
+            self = .expired
+        }
+    }
+}
+
 @Observable
 class StockInteractionNavigationRouter {
     var presentedInteraction: StockInteraction?
@@ -71,19 +125,46 @@ struct StockView: View {
 
     @Environment(DeepLinkManager.self) var deepLinkManager
 
-    private enum StockGrouping: Identifiable {
-        case none, productGroup, nextDueDate, lastPurchased, minStockAmount, parentProduct, defaultLocation
-        var id: Int {
-            hashValue
+    @AppStorage("StockView.stockGrouping") private var stockGrouping: StockGrouping = .none
+    @AppStorage("StockView.sortCategory") private var sortCategory: SortCategory = .name
+    @AppStorage("StockView.sortOrder") private var storageSortOrder: StorageSortOrder = .forward
+    @AppStorage("StockView.filteredLocationID") private var filteredLocationID: Int?
+    @AppStorage("StockView.filteredProductGroupID") private var filteredProductGroupID: Int?
+    @AppStorage("StockView.filteredStatus") private var storageFilteredStatus: StorageProductStatus = .all
+
+    private var sortOrder: SortOrder {
+        storageSortOrder.sortOrder
+    }
+
+    private var sortOrderBinding: Binding<SortOrder> {
+        Binding(
+            get: { self.sortOrder },
+            set: { self.storageSortOrder = StorageSortOrder(from: $0) }
+        )
+    }
+
+    private var filteredStatus: ProductStatus {
+        storageFilteredStatus.productStatus
+    }
+
+    private var filteredStatusBinding: Binding<ProductStatus> {
+        Binding(
+            get: { self.filteredStatus },
+            set: { self.storageFilteredStatus = StorageProductStatus(from: $0) }
+        )
+    }
+
+    var sortSetting: [KeyPathComparator<StockElement>] {
+        let order = sortOrder
+        switch sortCategory {
+        case .name:
+            return [KeyPathComparator(\StockElement.product?.name, order: order)]
+        case .dueDate:
+            return [KeyPathComparator(\StockElement.bestBeforeDate, order: order)]
+        case .amount:
+            return [KeyPathComparator(\StockElement.amount, order: order)]
         }
     }
-    @State private var stockGrouping: StockGrouping = .none
-    @State private var sortSetting = [KeyPathComparator(\StockElement.productID)]
-    @State private var sortOrder: SortOrder = .forward
-
-    @State private var filteredLocationID: Int?
-    @State private var filteredProductGroupID: Int?
-    @State private var filteredStatus: ProductStatus = .all
 
     @State private var stockInteractionRouter = StockInteractionNavigationRouter()
 
@@ -338,7 +419,7 @@ struct StockView: View {
     var body: some View {
         List {
             Section {
-                StockFilterActionsView(filteredStatus: $filteredStatus, numExpiringSoon: numExpiringSoon, numOverdue: numOverdue, numExpired: numExpired, numBelowStock: numBelowStock)
+                StockFilterActionsView(filteredStatus: filteredStatusBinding, numExpiringSoon: numExpiringSoon, numOverdue: numOverdue, numExpired: numExpired, numBelowStock: numBelowStock)
                     .listRowInsets(EdgeInsets())
             }
 
@@ -362,13 +443,13 @@ struct StockView: View {
             computeFilteredAndGroupedStock()
 
             if let filter = deepLinkManager.pendingStockFilter {
-                filteredStatus = filter
+                storageFilteredStatus = StorageProductStatus(from: filter)
                 deepLinkManager.consume()
             }
         }
         .onChange(of: deepLinkManager.pendingStockFilter) { _, newValue in
             if let filter = newValue {
-                filteredStatus = filter
+                storageFilteredStatus = StorageProductStatus(from: filter)
                 deepLinkManager.consume()
             }
         }
@@ -378,7 +459,7 @@ struct StockView: View {
         .onChange(of: filteredProductGroupID) { _, _ in
             computeFilteredAndGroupedStock()
         }
-        .onChange(of: filteredStatus) { _, _ in
+        .onChange(of: storageFilteredStatus) { _, _ in
             computeFilteredAndGroupedStock()
         }
         .onChange(of: searchString) { _, _ in
@@ -387,7 +468,10 @@ struct StockView: View {
         .onChange(of: stockGrouping) { _, _ in
             computeFilteredAndGroupedStock()
         }
-        .onChange(of: sortSetting) { _, _ in
+        .onChange(of: sortCategory) { _, _ in
+            computeFilteredAndGroupedStock()
+        }
+        .onChange(of: storageSortOrder) { _, _ in
             computeFilteredAndGroupedStock()
         }
         .onChange(of: stock) { _, _ in
@@ -462,14 +546,14 @@ struct StockView: View {
                             isPresented: $showingFilterSheet,
                             content: {
                                 VStack {
-                                    StockFilterView(filteredLocationID: $filteredLocationID, filteredProductGroupID: $filteredProductGroupID, filteredStatus: $filteredStatus)
+                                    StockFilterView(filteredLocationID: $filteredLocationID, filteredProductGroupID: $filteredProductGroupID, filteredStatus: filteredStatusBinding)
                                     HStack {
                                         Button(
                                             role: .destructive,
                                             action: {
                                                 filteredLocationID = nil
                                                 filteredProductGroupID = nil
-                                                filteredStatus = .all
+                                                storageFilteredStatus = .all
                                                 showingFilterSheet = false
                                             }
                                         )
@@ -533,7 +617,7 @@ struct StockView: View {
         #if os(iOS)
             .sheet(isPresented: $showingFilterSheet) {
                 NavigationStack {
-                    StockFilterView(filteredLocationID: $filteredLocationID, filteredProductGroupID: $filteredProductGroupID, filteredStatus: $filteredStatus)
+                    StockFilterView(filteredLocationID: $filteredLocationID, filteredProductGroupID: $filteredProductGroupID, filteredStatus: filteredStatusBinding)
                     .navigationTitle("Filter")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -556,7 +640,7 @@ struct StockView: View {
                                     action: {
                                         filteredLocationID = nil
                                         filteredProductGroupID = nil
-                                        filteredStatus = .all
+                                        storageFilteredStatus = .all
                                         showingFilterSheet = false
                                     }
                                 )
@@ -610,29 +694,17 @@ struct StockView: View {
                 Picker(
                     "Sort category",
                     systemImage: MySymbols.sortCategory,
-                    selection: $sortSetting,
+                    selection: $sortCategory,
                     content: {
-                        if sortOrder == .forward {
-                            Label("Name", systemImage: MySymbols.product)
-                                .labelStyle(.titleAndIcon)
-                                .tag([KeyPathComparator(\StockElement.product?.name, order: .forward)])
-                            Label("Due date", systemImage: MySymbols.date)
-                                .labelStyle(.titleAndIcon)
-                                .tag([KeyPathComparator(\StockElement.bestBeforeDate, order: .forward)])
-                            Label("Amount", systemImage: MySymbols.amount)
-                                .labelStyle(.titleAndIcon)
-                                .tag([KeyPathComparator(\StockElement.amount, order: .forward)])
-                        } else {
-                            Label("Name", systemImage: MySymbols.product)
-                                .labelStyle(.titleAndIcon)
-                                .tag([KeyPathComparator(\StockElement.product?.name, order: .reverse)])
-                            Label("Due date", systemImage: MySymbols.date)
-                                .labelStyle(.titleAndIcon)
-                                .tag([KeyPathComparator(\StockElement.bestBeforeDate, order: .reverse)])
-                            Label("Amount", systemImage: MySymbols.amount)
-                                .labelStyle(.titleAndIcon)
-                                .tag([KeyPathComparator(\StockElement.amount, order: .reverse)])
-                        }
+                        Label("Name", systemImage: MySymbols.product)
+                            .labelStyle(.titleAndIcon)
+                            .tag(SortCategory.name)
+                        Label("Due date", systemImage: MySymbols.date)
+                            .labelStyle(.titleAndIcon)
+                            .tag(SortCategory.dueDate)
+                        Label("Amount", systemImage: MySymbols.amount)
+                            .labelStyle(.titleAndIcon)
+                            .tag(SortCategory.amount)
                     }
                 )
                 #if os(iOS)
@@ -644,7 +716,7 @@ struct StockView: View {
                 Picker(
                     "Sort order",
                     systemImage: MySymbols.sortOrder,
-                    selection: $sortOrder,
+                    selection: sortOrderBinding,
                     content: {
                         Label("Ascending", systemImage: MySymbols.sortForward)
                             .labelStyle(.titleAndIcon)
@@ -659,12 +731,6 @@ struct StockView: View {
                 #else
                     .pickerStyle(.inline)
                 #endif
-                .onChange(of: sortOrder) {
-                    if var sortElement = sortSetting.first {
-                        sortElement.order = sortOrder
-                        sortSetting = [sortElement]
-                    }
-                }
             },
             label: {
                 Label("Sort", systemImage: MySymbols.sort)
