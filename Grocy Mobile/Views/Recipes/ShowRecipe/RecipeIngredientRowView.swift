@@ -23,6 +23,7 @@ struct RecipeIngredientRowView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                         Text("\(Text("Enough in stock")) (\(recipePos.stockAmount.formattedAmount) \(quantityUnit?.getName(amount: recipePos.stockAmount) ?? ""))")
+                            .italic()
                             .font(.caption)
                     }
                 } else {
@@ -35,8 +36,13 @@ struct RecipeIngredientRowView: View {
                                 .foregroundStyle(.red)
                         }
                         Text("Not enough in stock, \(recipePos.missingAmount.formattedAmount) missing, \(recipePos.amountOnShoppingList.formattedAmount) already on shopping list")
+                            .italic()
                             .font(.caption)
                     }
+                }
+                if recipePos.note.isEmpty == false {
+                    Text(recipePos.note)
+                        .font(.caption)
                 }
             }
             Spacer()
